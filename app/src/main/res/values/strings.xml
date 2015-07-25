@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Background Youtube</string>
+    <string name="title_activity_main">Play in Background</string>
+</resources>
