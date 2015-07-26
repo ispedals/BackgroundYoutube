@@ -2,10 +2,12 @@ package is.pedals.backgroundyoutube;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.devbrackets.android.exomedia.event.EMMediaProgressEvent;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
@@ -20,7 +22,6 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends Activity {
 
-    private static final int PLAYLIST_ID = 823;
     private static final String TAG = "BackgroundYoutube";
     private static final boolean DEBUG = false;
 
@@ -33,14 +34,36 @@ public class MainActivity extends Activity {
             return;
         }
         Intent intent = getIntent();
-        if (intent.getAction() == null || !intent.getAction().equals(Intent.ACTION_SEND)) {
+        if (intent.getAction() == null) {
             finish();
             return;
         }
-        String info = intent.getExtras().getString(Intent.EXTRA_TEXT);
-        new StartPlaybackTask().execute(info);
-        finish();
+        if (intent.getAction().equals(Intent.ACTION_SEND)) {
+            String info = intent.getExtras().getString(Intent.EXTRA_TEXT);
+            new StartPlaybackTask().execute(info);
+            finish();
+            return;
+        }
+        if (intent.getAction().equals(MediaPlayerService.PLAY_IN_YOUTUBE)) {
+            PlaylistManager playlistManager = App.getPlaylistManager();
+            MediaItem item = playlistManager.getCurrentItem();
+            if (item != null) {
+                String videoID = item.getVideoId();
 
+                long start = 0;
+                EMMediaProgressEvent currentMediaProgress = playlistManager.getCurrentProgress();
+                if (currentMediaProgress != null && currentMediaProgress.getDuration() != 0) {
+                    start = currentMediaProgress.getPosition() / 1000;
+                }
+                Intent youtubeIntent = new Intent(Intent.ACTION_VIEW,
+                        Uri.parse("http://www.youtube.com/embed/" + videoID + "?start=" + start));
+                //android app does not respect start parameter
+                startActivity(youtubeIntent);
+            }
+            finish();
+            return;
+        }
+        finish();
     }
 
     private class StartPlaybackTask extends AsyncTask<String, Void, Void> {

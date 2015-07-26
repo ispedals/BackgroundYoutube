@@ -11,6 +11,7 @@ import com.devbrackets.android.exomedia.service.EMPlaylistService;
 //copied from exomediademo/service/AudioService.java
 public class MediaPlayerService extends EMPlaylistService<MediaItem, PlaylistManager> {
 
+    public static final String PLAY_IN_YOUTUBE = "playinyoutube";
     private static final int NOTIFICATION_ID = 1564; //Arbitrary
     private static final int FOREGROUND_REQUEST_CODE = 332; //Arbitrary
     private static final float AUDIO_DUCK_VOLUME = 0.1f;
@@ -38,8 +39,8 @@ public class MediaPlayerService extends EMPlaylistService<MediaItem, PlaylistMan
     @Override
     protected PendingIntent getNotificationClickPendingIntent() {
         Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-        return PendingIntent.getActivity(getApplicationContext(), FOREGROUND_REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-
+        intent.setAction(PLAY_IN_YOUTUBE);
+        return PendingIntent.getActivity(getApplicationContext(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
     @Override
