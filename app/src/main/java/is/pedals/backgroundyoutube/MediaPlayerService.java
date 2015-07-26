@@ -3,13 +3,18 @@ package is.pedals.backgroundyoutube;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.os.AsyncTask;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
+import com.devbrackets.android.exomedia.EMNotification;
+import com.devbrackets.android.exomedia.event.EMMediaProgressEvent;
 import com.devbrackets.android.exomedia.service.EMPlaylistService;
+
+import java.util.concurrent.TimeUnit;
 
 //copied from exomediademo/service/AudioService.java
 public class MediaPlayerService extends EMPlaylistService<MediaItem, PlaylistManager> {
@@ -21,6 +26,13 @@ public class MediaPlayerService extends EMPlaylistService<MediaItem, PlaylistMan
     private static final float AUDIO_DUCK_VOLUME = 0.1f;
 
     private Bitmap largeNotificationImage;
+
+    @Override
+    protected void onServiceCreate() {
+        super.onServiceCreate();
+        //use our customized Notification class
+        notificationHelper = new BYtNotification(getApplicationContext());
+    }
 
     @Override
     protected String getAppName() {
@@ -125,6 +137,64 @@ public class MediaPlayerService extends EMPlaylistService<MediaItem, PlaylistMan
         }
 
         postPlaylistItemChanged();
+    }
+
+    @Override
+    //we use this to update the timestamp in the notification
+    public boolean onProgressUpdated(EMMediaProgressEvent progressEvent) {
+        boolean ret = super.onProgressUpdated(progressEvent);
+        new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... params) {
+                //UI can't keep up on real device
+                //updateNotification();
+                return null;
+            }
+        }.execute();
+        return ret;
+    }
+
+    @Override
+    /*
+    Almost the same as in EMPlaylistService except that:
+        -the title is the video title
+        -the content is the timestamp
+        -we pass the current position and audio duration to the notification
+     */
+    protected void updateNotification() {
+        if (currentPlaylistItem == null || !foregroundSetup) {
+            return;
+        }
+
+        //Generate the notification state
+        EMNotification.NotificationMediaState mediaState = new EMNotification.NotificationMediaState();
+        mediaState.setNextEnabled(getMediaPlaylistManager().isNextAvailable());
+        mediaState.setPreviousEnabled(getMediaPlaylistManager().isPreviousAvailable());
+        mediaState.setPlaying(isPlaying());
+
+
+        //Update the big notification images
+        Bitmap bitmap = getLargeNotificationImage();
+        if (bitmap == null) {
+            bitmap = getDefaultLargeNotificationImage();
+        }
+
+        Bitmap secondaryImage = getLargeNotificationSecondaryImage();
+        if (secondaryImage == null) {
+            secondaryImage = getDefaultLargeNotificationSecondaryImage();
+        }
+
+        String title = currentPlaylistItem.getTitle();
+        String time = null;
+        long position = -1, duration = -1;
+        if (currentMediaProgress != null && currentMediaProgress.getDuration() != 0) {
+            position = currentMediaProgress.getPosition();
+            duration = currentMediaProgress.getDuration();
+            time = String.format("%d:%02d/%d:%02d", TimeUnit.MILLISECONDS.toMinutes(position), TimeUnit.MILLISECONDS.toSeconds(position) -
+                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(position)), TimeUnit.MILLISECONDS.toMinutes(duration), TimeUnit.MILLISECONDS.toSeconds(duration) -
+                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration)));
+        }
+        ((BYtNotification) notificationHelper).updateNotificationInformation(title, time, bitmap, secondaryImage, mediaState, position, duration);
     }
 }
 
