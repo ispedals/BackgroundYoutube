@@ -12,9 +12,8 @@ import com.squareup.okhttp.Response;
 
 import java.io.IOException;
 import java.net.URLDecoder;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -74,14 +73,10 @@ public class MainActivity extends Activity {
                 //dashmpd is double encoded, so we need to decode it again
                 String url = URLDecoder.decode(dashmpd, "utf-8");
                 String title = data.get("title");
+                String thumbnail = data.get("iurlhq");
                 PlaylistManager playlistManager = App.getPlaylistManager();
                 playlistManager.setMediaServiceClass(MediaPlayerService.class);
-                List<MediaItem> mediaItems = new LinkedList<>();
-                MediaItem mediaItem = new MediaItem(url, title);
-                mediaItems.add(mediaItem);
-                playlistManager.setParameters(mediaItems, 0);
-                playlistManager.setPlaylistId(PLAYLIST_ID);
-                playlistManager.play(0, false);
+                playlistManager.play(Arrays.asList(new MediaItem[]{new MediaItem(url, title, thumbnail, videoID)}), 0, 0, false);
 
             } catch (IOException e) {
                 Log.e(TAG, "http", e);
